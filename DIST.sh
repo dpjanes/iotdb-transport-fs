@@ -33,7 +33,7 @@ echo "=================="
         --exclude "node_modules" \
         README.md LICENSE \
         homestar.json package.json \
-        index.js FirebaseTransport.js \
+        index.js FSTransport.js \
         |
     ( cd "${NPM_DST}" && tar xvf - )
 

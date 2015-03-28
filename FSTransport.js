@@ -309,6 +309,3 @@ var _pack = function(d) {
  *  API
  */
 exports.FSTransport = FSTransport;
-
-
-var t = new FSTransport();

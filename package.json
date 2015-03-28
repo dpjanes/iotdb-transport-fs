@@ -4,10 +4,9 @@
         "url": "https://github.com/dpjanes/iotdb-transport-fs/issues"
     }, 
     "dependencies": {
-        "iotdb": ">=0.5.8", 
-        "mkdirp": "", 
-        "watch": "", 
-        "validate": "~2.1.6"
+        "mkdirp": "~0.5.0", 
+        "validate": "~2.1.6", 
+        "watch": "~0.14.0"
     }, 
     "description": "HomeStar / IOTDB Bridge for Filesystems", 
     "devDependencies": {
@@ -26,6 +25,9 @@
     "license": "Apache-2.0", 
     "main": "index.js", 
     "name": "iotdb-transport-fs", 
+    "peerDependencies": {
+        "iotdb": ">=0.5.11"
+    }, 
     "private": false, 
     "repository": {
         "type": "git", 
@@ -34,5 +36,5 @@
     "scripts": {
         "test": "grunt"
     }, 
-    "version": "0.0.0"
+    "version": "0.0.2"
 }

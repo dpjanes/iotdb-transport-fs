@@ -22,4 +22,11 @@
 
 "use strict";
 
-exports.Transport = require('./FSTransport').FSTransport;
+var FSTransport = require('./FSTransport');
+
+exports.Transport = FSTransport.FSTransport;
+
+exports.make_flat_channel = FSTransport.make_flat_channel;
+exports.make_flat_unchannel = FSTransport.make_flat_unchannel;
+exports.flat_channel = FSTransport.flat_channel;
+exports.flat_unchannel = FSTransport.flat_unchannel;

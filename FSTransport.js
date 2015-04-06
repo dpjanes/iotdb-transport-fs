@@ -99,22 +99,24 @@ FSTransport.prototype.list = function(paramd, callback) {
             }
 
             var name = names.pop();
-            var path = fs.join(self.initd.prefix, name);
+            var folder = path.join(self.initd.prefix, name);
 
-            var result = self.initd.unchannel(path)
+            var result = self.initd.unchannel(self.initd.prefix, folder)
             if (result) {
                 callback([ result[0] ]);
                 _pop();
             } else {
-                fs.stat(path, function(error, stbuf) {
+                /*
+                fs.stat(folder, function(error, stbuf) {
                     if (error) {
                     } else if (stbuf.isDirectory()) {
-                        callback([ path ]);
+                        callback([ folder ]);
                     } else {
                     }
 
                     _pop();
                 });
+                */
             }
         };
 
@@ -261,9 +263,9 @@ FSTransport.prototype.remove = function(id, band) {
             }
 
             var name = names.pop();
-            var path = fs.join(channel, name);
+            var folder = path.join(channel, name);
 
-            fs.unlink(channel, function(error) {
+            fs.unlink(folder, function(error) {
                 _pop();
             });
         };
@@ -363,8 +365,8 @@ var make_flat_channel = function(flat_band) {
  *  Make a 'flat_unchannel' function using 'flat_band'
  */
 var make_flat_unchannel = function(flat_band) {
-    return function(prefix, path) {
-        var subpath = path.substring(prefix.length).replace(/^\//, '');
+    return function(prefix, folder) {
+        var subpath = folder.substring(prefix.length).replace(/^\//, '');
         var parts = subpath.split("/");
 
         if (parts.length !== 1) {

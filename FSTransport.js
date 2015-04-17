@@ -70,6 +70,8 @@ var FSTransport = function (initd) {
     });
 };
 
+FSTransport.prototype = new iotdb.transporter.Transport;
+
 /**
  *  List all the IDs associated with this Transport.
  *
@@ -103,7 +105,7 @@ FSTransport.prototype.list = function(paramd, callback) {
 
             var result = self.initd.unchannel(self.initd.prefix, folder)
             if (result) {
-                callback([ result[0] ]);
+                callback(result[0]);
                 _pop();
             } else {
                 /*
@@ -122,6 +124,21 @@ FSTransport.prototype.list = function(paramd, callback) {
 
         _pop();
     });
+};
+
+/**
+ *  Trigger the callback whenever a new thing is added.
+ *  NOT FINISHED
+ */
+FSTransport.prototype.added = function(paramd, callback) {
+    var self = this;
+
+    if (arguments.length === 1) {
+        paramd = {};
+        callback = arguments[0];
+    }
+
+    var channel = self._channel();
 };
 
 /**
@@ -242,7 +259,7 @@ FSTransport.prototype.updated = function(id, band, callback) {
 
 /**
  */
-FSTransport.prototype.remove = function(id, band) {
+FSTransport.prototype.remove = function(id) {
     var self = this;
 
     if (!id) {

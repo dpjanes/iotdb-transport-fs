@@ -149,6 +149,8 @@ FSTransport.prototype.get = function(id, band, callback) {
     if (!id) {
         throw new Error("id is required");
     }
+
+    /* XXX: band === null not implemented correctly */
     if (!band) {
         throw new Error("band is required");
     }

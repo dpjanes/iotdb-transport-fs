@@ -13,6 +13,9 @@ var FSTransport = require('../FSTransport').FSTransport;
 
 var p = new FSTransport({
 });
-p.list(function(ids) {
-    console.log(ids);
+p.list(function(ld) {
+    if (!ld) {
+        return;
+    }
+    console.log(ld.id);
 });

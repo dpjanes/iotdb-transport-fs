@@ -1,17 +1,18 @@
 /*
- *  list.js
+ *  list_flat.js
  *
  *  David Janes
  *  IOTDB.org
- *  2015-03-24
+ *  2015-04-18
  *
- *  Demonstrate receiving
  *  Make sure to see README first
  */
 
 var FSTransport = require('../FSTransport').FSTransport;
 
 var p = new FSTransport({
+    flat_band: "meta",
+    prefix: ".flat",
 });
 p.list(function(ld) {
     if (!ld) {

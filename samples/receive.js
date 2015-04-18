@@ -13,12 +13,15 @@ var FSTransport = require('../FSTransport').FSTransport;
 
 var p = new FSTransport({
 });
-p.updated("MyThingID", "meta", function(id, band, value) {
-    if (value === undefined) {
-        p.get(id, band, function(_id, _band, value) {
-            console.log("+", id, band, value);
+p.updated({
+    id: "MyThingID", 
+    band: "meta", 
+}, function(ud) {
+    if (ud.value === undefined) {
+        p.get(ud, function(gd) {
+            console.log("+", gd.id, gd.band, gd.value);
         });
     } else {
-        console.log("+", id, band, value);
+        console.log("+", ud.id, ud.band, ud.value);
     }
 });

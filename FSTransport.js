@@ -39,26 +39,30 @@ var logger = bunyan.createLogger({
     module: 'FSTransport',
 });
 
+/* --- constructor --- */
+
 /**
- *  Create a transport for FireBase.
- *  
+ *  File System based Transport
  *  <p>
- *  Note: using a custom initd.channel that doesn't
- *  make subfolders will not play well with the other
- *  functions. We really need to have a corresponding
- *  'unchannel' function but I don't have the time
- *  to write that right now
+ *  See {iotdb.transporter.Transport#Transport} for documentation.
  */
 var FSTransport = function (initd) {
     var self = this;
 
     self.initd = _.defaults(
         initd,
+        {
+            channel: iotdb.transporter.channel,
+            unchannel: iotdb.transporter.unchannel,
+            encode: _encode,
+            decode: _decode,
+            pack: _pack,
+            unpack: _unpack,
+        },
         iotdb.keystore().get("/transports/FSTransport/initd"),
         {
             prefix: path.join(process.cwd(), ".iotdb", "fs"),
-            channel: _channel,
-            unchannel: _unchannel,
+            flat_band: null,
         }
     );
 
@@ -72,15 +76,10 @@ var FSTransport = function (initd) {
 
 FSTransport.prototype = new iotdb.transporter.Transport;
 
+/* --- methods --- */
+
 /**
- *  List all the IDs associated with this Transport.
- *
- *  The callback is called with a list of IDs
- *  and then null when there are no further values.
- *
- *  Note that this may not be memory efficient due
- *  to the way "value" works. This could be revisited
- *  in the future.
+ *  See {iotdb.transporter.Transport#list} for documentation.
  */
 FSTransport.prototype.list = function(paramd, callback) {
     var self = this;
@@ -89,6 +88,8 @@ FSTransport.prototype.list = function(paramd, callback) {
         paramd = {};
         callback = arguments[0];
     }
+
+    self._validate_list(paramd, callback);
 
     fs.readdir(self.initd.prefix, function(error, names) {
         if (error) {
@@ -103,9 +104,11 @@ FSTransport.prototype.list = function(paramd, callback) {
             var name = names.pop();
             var folder = path.join(self.initd.prefix, name);
 
-            var result = self.initd.unchannel(self.initd.prefix, folder)
+            var result = self.initd.unchannel(self.initd, folder);
             if (result) {
-                callback(result[0]);
+                callback({
+                    id: result[0],
+                });
                 _pop();
             } else {
                 /*
@@ -127,7 +130,8 @@ FSTransport.prototype.list = function(paramd, callback) {
 };
 
 /**
- *  Trigger the callback whenever a new thing is added.
+ *  See {iotdb.transporter.Transport#added} for documentation.
+ *  <p>
  *  NOT FINISHED
  */
 FSTransport.prototype.added = function(paramd, callback) {
@@ -138,86 +142,90 @@ FSTransport.prototype.added = function(paramd, callback) {
         callback = arguments[0];
     }
 
-    var channel = self._channel();
+    self._validate_added(paramd, callback);
 };
 
 /**
+ *  See {iotdb.transporter.Transport#get} for documentation.
  */
-FSTransport.prototype.get = function(id, band, callback) {
+FSTransport.prototype.get = function(paramd, callback) {
     var self = this;
 
-    if (!id) {
-        throw new Error("id is required");
-    }
+    self._validate_get(paramd, callback);
 
-    /* XXX: band === null not implemented correctly */
-    if (!band) {
-        throw new Error("band is required");
-    }
-
-    var channel = self.initd.channel(self.initd.prefix, id, band);
+    var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
 
     /* undefined for "don't know"; null for "doesn't exist" */
     fs.readFile(channel, {
         encoding: 'utf8'
     }, function(error, doc) {
         if (error) {
-            callback(id, band, null);
+            callback({
+                id: paramd.id, 
+                band: paramd.band, 
+                value: null,
+                error: error,
+            });
         }
 
         try {
-            callback(id, band, JSON.parse(doc));
+            callback({
+                id: paramd.id, 
+                band: paramd.band, 
+                value: self.initd.unpack(JSON.parse(doc)),
+            });
         }
         catch (x) {
-            callback(id, band, null);
+            callback({
+                id: paramd.id, 
+                band: paramd.band, 
+                value: null,
+                error: new Error("unexpected exception"),
+                exception: x,
+            });
         }
     });
 };
 
 /**
+ *  See {iotdb.transporter.Transport#update} for documentation.
  */
-FSTransport.prototype.update = function(id, band, value) {
+FSTransport.prototype.update = function(paramd, callback) {
     var self = this;
 
-    if (!id) {
-        throw new Error("id is required");
-    }
-    if (!band) {
-        throw new Error("band is required");
-    }
+    self._validate_update(paramd, callback);
 
-    var channel = self.initd.channel(self.initd.prefix, id, band, { mkdirs: true });
-    var d = _pack(value);
+    var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
+    var d = self.initd.pack(paramd.value);
 
-    /* this makes it an atomic write */
-    /*
-    var fake_channel = self.initd.channel(self.initd.prefix, id, "." + band);
-    fs.writeFileSync(fake_channel, JSON.stringify(d, null, 2));
-    fs.rename(fake_channel, channel);
-    */
-    fs.writeFileSync(channel, JSON.stringify(d, null, 2));
+    mkdirp(path.dirname(channel), function(error) {
+        if (error) {
+            if (callback) {
+                callback({
+                    error: error
+                });
+            }
+            return;
+        }
+
+        fs.writeFileSync(channel, JSON.stringify(d, null, 2));
+    });
 };
 
 /**
+ *  See {iotdb.transporter.Transport#updated} for documentation.
  */
-FSTransport.prototype.updated = function(id, band, callback) {
+FSTransport.prototype.updated = function(paramd, callback) {
     var self = this;
 
-    if (arguments.length === 1) {
-        id = null;
-        band = null;
-        callback = arguments[0];
-    } else if (arguments.length === 2) {
-        band = null;
-        callback = arguments[1];
-    }
+    self._validate_updated(paramd, callback);
 
     var last_time = 0;
     var last_id = null;
     var last_band = null;
 
     var _doit = function(f) {
-        var result = self.initd.unchannel(self.initd.prefix, f)
+        var result = self.initd.unchannel(self.initd, f);
         if (!result) {
             return;
         }
@@ -225,11 +233,11 @@ FSTransport.prototype.updated = function(id, band, callback) {
         var this_id = result[0];
         var this_band = result[1];
 
-        if (id && (this_id !== id)) {
+        if (paramd.id && (this_id !== paramd.id)) {
             return;
         }
 
-        if (band && (this_band !== band)) {
+        if (paramd.band && (this_band !== paramd.band)) {
             return;
         }
 
@@ -243,7 +251,11 @@ FSTransport.prototype.updated = function(id, band, callback) {
         last_band = this_band;
         last_time = now;
 
-        callback(this_id, this_band, undefined);
+        callback({
+            id: this_id, 
+            band: this_band, 
+            value: undefined,
+        });
     };
 
     watch.createMonitor(self.initd.prefix, function (monitor) {
@@ -260,15 +272,14 @@ FSTransport.prototype.updated = function(id, band, callback) {
 };
 
 /**
+ *  See {iotdb.transporter.Transport#remove} for documentation.
  */
-FSTransport.prototype.remove = function(id) {
+FSTransport.prototype.remove = function(paramd) {
     var self = this;
 
-    if (!id) {
-        throw new Error("id is required");
-    }
+    self._validate_remove(paramd, callback);
 
-    var channel = self.initd.channel(self.initd.prefix, id, band);
+    var channel = self.initd.channel(self.initd, paramd.id);
 
     fs.readdir(channel, function(error, names) {
         if (error) {
@@ -293,52 +304,7 @@ FSTransport.prototype.remove = function(id) {
     });
 };
 
-/* -- internals -- */
-var _channel = function(prefix, id, band, paramd) {
-    var self = this;
-
-    paramd = _.defaults(paramd, {
-        mkdirs: false,
-    });
-
-    var channel = prefix;
-    if (id) {
-        channel = path.join(channel, _encode(id));
-
-        if (paramd.mkdirs) {
-            mkdirp.sync(channel, function(error) {
-            });
-        }
-
-        if (band) {
-            channel = path.join(channel, _encode(band));
-        }
-    }
-
-    return channel;
-};
-
-/**
- *  Will return [ id, band ] or undefined
- */
-var _unchannel = function(prefix, path) {
-    var subpath = path.substring(prefix.length).replace(/^\//, '');
-    var parts = subpath.split("/");
-
-    if (parts.length !== 2) {
-        return;
-    }
-
-    if (parts[1].match(/^[.]/)) {
-        return;
-    }
-
-    var this_id = _decode(parts[0]);
-    var this_band = _decode(parts[1]);
-
-    return [ this_id, this_band ];
-};
-
+/* --- internals --- */
 var _encode = function(s) {
     return s.replace(/[\/$%#.\]\[]/g, function(c) {
         return '%' + c.charCodeAt(0).toString(16);
@@ -363,50 +329,7 @@ var _pack = function(d) {
     });
 };
 
-/* --- use these if you don't care about bands and using subdirectories --- */
-/**
- *  Make a 'flat_channel' function using 'flat_band'.
- */
-var make_flat_channel = function(flat_band) {
-    return function(prefix, id, band, paramd) {
-        var self = this;
-
-        var channel = prefix;
-        if (id) {
-            channel = path.join(channel, _encode(id));
-        }
-
-        return channel;
-    };
-};
-
-/**
- *  Make a 'flat_unchannel' function using 'flat_band'
- */
-var make_flat_unchannel = function(flat_band) {
-    return function(prefix, folder) {
-        var subpath = folder.substring(prefix.length).replace(/^\//, '');
-        var parts = subpath.split("/");
-
-        if (parts.length !== 1) {
-            return;
-        }
-
-        if (parts[0].match(/^[.]/)) {
-            return;
-        }
-
-        var this_id = _decode(parts[0]);
-
-        return [ this_id, flat_band ];
-    };
-};
-
 /**
  *  API
  */
 exports.FSTransport = FSTransport;
-exports.make_flat_channel = make_flat_channel;
-exports.make_flat_unchannel = make_flat_unchannel;
-exports.flat_channel = make_flat_channel("band");
-exports.flat_unchannel = make_flat_unchannel("band");

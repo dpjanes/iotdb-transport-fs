@@ -13,18 +13,21 @@ var transport = require('../index');
 var FSTransport = transport.Transport;
 
 var p = new FSTransport({
-    channel: transport.make_flat_channel("meta"),
-    unchannel: transport.make_flat_unchannel("meta"),
+    flat_band: "meta",
     prefix: ".flat",
 });
 
 var _update = function() {
     var now = (new Date()).toISOString();
     console.log("+ sent update", now);
-    p.update("MyThingID", "meta", {
-        first: "David",
-        last: "Janes",
-        now: now,
+    p.update({
+        id: "MyThingID", 
+        band: "meta", 
+        value: {
+            first: "David",
+            last: "Janes",
+            now: now,
+        },
     });
 };
 

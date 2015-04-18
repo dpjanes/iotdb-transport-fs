@@ -146,6 +146,90 @@ FSTransport.prototype.added = function(paramd, callback) {
 };
 
 /**
+ *  See {iotdb.transporter.Transport#about} for documentation.
+ */
+FSTransport.prototype.about = function(paramd, callback) {
+    var self = this;
+
+    self._validate_about(paramd, callback);
+
+    if (self.initd.flat_band) {
+        self._about_flat(paramd, callback);
+    } else {
+        self._about_normal(paramd, callback);
+    }
+};
+
+/**
+ *  Flat files - read and if it exists return [ id, flat_band ]
+ */
+FSTransport.prototype._about_flat = function(paramd, callback) {
+    var self = this;
+    var channel = self.initd.channel(self.initd, paramd.id);
+
+    fs.readFile(channel, {
+        encoding: 'utf8'
+    }, function(error, doc) {
+        if (error) {
+            return callback({
+                id: paramd.id, 
+                bands: null,
+                error: error,
+            });
+        }
+
+        return callback({
+            id: paramd.id, 
+            bands: [ self.initd.flat_band, ],
+        });
+    });
+};
+
+/**
+ */
+FSTransport.prototype._about_normal = function(paramd, callback) {
+    var self = this;
+    var channel = self.initd.channel(self.initd, paramd.id);
+    var bands = [];
+
+    fs.readdir(channel, function(error, names) {
+        if (error) {
+            return;
+        }
+
+        var _pop = function() {
+            if (names.length === 0) {
+                callback({
+                    id: paramd.id,
+                    bands: bands,
+                });
+                return;
+            }
+
+            var name = names.pop();
+            var folder = path.join(channel, name);
+            var result = self.initd.unchannel(self.initd, folder);
+            if (!result) {
+                _pop();
+                return;
+            }
+
+            fs.readFile(folder, {
+                encoding: 'utf8'
+            }, function(error, doc) {
+                if (!error) {
+                    bands.push(name);
+                }
+
+                _pop();
+            });
+        };
+
+        _pop();
+    });
+};
+
+/**
  *  See {iotdb.transporter.Transport#get} for documentation.
  */
 FSTransport.prototype.get = function(paramd, callback) {

@@ -172,7 +172,7 @@ FSTransport.prototype.get = function(paramd, callback) {
             callback({
                 id: paramd.id, 
                 band: paramd.band, 
-                value: self.initd.unpack(JSON.parse(doc)),
+                value: self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band),
             });
         }
         catch (x) {
@@ -196,7 +196,7 @@ FSTransport.prototype.update = function(paramd, callback) {
     self._validate_update(paramd, callback);
 
     var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
-    var d = self.initd.pack(paramd.value);
+    var d = self.initd.pack(paramd.value, paramd.id, paramd.band);
 
     mkdirp(path.dirname(channel), function(error) {
         if (error) {
@@ -305,8 +305,14 @@ FSTransport.prototype.remove = function(paramd) {
 };
 
 /* --- internals --- */
+
+var safe_rex = /[\/$%#.\]\[]/g;
+if (/^win/.test(process.platform)) {
+    safe_rex = /[:\/$%#.\]\[]/g;
+}
+
 var _encode = function(s) {
-    return s.replace(/[\/$%#.\]\[]/g, function(c) {
+    return s.replace(safe_rex, function(c) {
         return '%' + c.charCodeAt(0).toString(16);
     });
 };
@@ -315,14 +321,14 @@ var _decode = function(s) {
     return decodeURIComponent(s);
 }
 
-var _unpack = function(d) {
+var _unpack = function(d, id, band) {
     return _.d.transform(d, {
         pre: _.ld_compact,
         key: _decode,
     });
 };
 
-var _pack = function(d) {
+var _pack = function(d, id, band) {
     return _.d.transform(d, {
         pre: _.ld_compact,
         key: _encode,

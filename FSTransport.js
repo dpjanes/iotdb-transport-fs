@@ -98,7 +98,9 @@ FSTransport.prototype.list = function(paramd, callback) {
 
         var _pop = function() {
             if (names.length === 0) {
-                return callback(null);
+                return callback({
+                    end: true,
+                });
             }
 
             var name = names.pop();

@@ -14,7 +14,7 @@ var FSTransport = require('../FSTransport').FSTransport;
 var p = new FSTransport({
 });
 p.list(function(ld) {
-    if (!ld) {
+    if (ld.end) {
         return;
     }
     console.log("+", ld.id);

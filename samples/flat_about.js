@@ -18,5 +18,9 @@ var transport = new FSTransport({
 transport.about({
     id: "MyThingID", 
 }, function(ad) {
+    if (ad.end) {
+        break;
+    }
+
     console.log("+", ad);
 });

@@ -98,9 +98,10 @@ FSTransport.prototype.list = function(paramd, callback) {
 
         var _pop = function() {
             if (names.length === 0) {
-                return callback({
+                callback({
                     end: true,
                 });
+                return;
             }
 
             var name = names.pop();
@@ -108,22 +109,13 @@ FSTransport.prototype.list = function(paramd, callback) {
 
             var result = self.initd.unchannel(self.initd, folder);
             if (result) {
-                callback({
+                if (callback({
                     id: result[0],
-                });
-                _pop();
-            } else {
-                /*
-                fs.stat(folder, function(error, stbuf) {
-                    if (error) {
-                    } else if (stbuf.isDirectory()) {
-                        callback([ folder ]);
-                    } else {
-                    }
+                })) {
+                    names = [];
+                };
 
-                    _pop();
-                });
-                */
+                _pop();
             }
         };
 

@@ -39,6 +39,12 @@ var logger = bunyan.createLogger({
     module: 'FSTransport',
 });
 
+/* --- forward definitions --- */
+var _encode;
+var _decode;
+var _unpack;
+var _pack;
+
 /* --- constructor --- */
 
 /**
@@ -50,8 +56,7 @@ var FSTransport = function (initd) {
     var self = this;
 
     self.initd = _.defaults(
-        initd,
-        {
+        initd, {
             channel: iotdb.transporter.channel,
             unchannel: iotdb.transporter.unchannel,
             encode: _encode,
@@ -59,8 +64,7 @@ var FSTransport = function (initd) {
             pack: _pack,
             unpack: _unpack,
         },
-        iotdb.keystore().get("/transports/FSTransport/initd"),
-        {
+        iotdb.keystore().get("/transports/FSTransport/initd"), {
             prefix: path.join(process.cwd(), ".iotdb", "fs"),
             flat_band: null,
         }
@@ -68,20 +72,19 @@ var FSTransport = function (initd) {
 
     /* for consistency but not used */
     self.native = {};
-    
+
     /* ignore errors - they will occur later anyway */
-    mkdirp.sync(self.initd.prefix, function(error) {
-    });
+    mkdirp.sync(self.initd.prefix, function (error) {});
 };
 
-FSTransport.prototype = new iotdb.transporter.Transport;
+FSTransport.prototype = new iotdb.transporter.Transport();
 
 /* --- methods --- */
 
 /**
  *  See {iotdb.transporter.Transport#list} for documentation.
  */
-FSTransport.prototype.list = function(paramd, callback) {
+FSTransport.prototype.list = function (paramd, callback) {
     var self = this;
 
     if (arguments.length === 1) {
@@ -91,12 +94,12 @@ FSTransport.prototype.list = function(paramd, callback) {
 
     self._validate_list(paramd, callback);
 
-    fs.readdir(self.initd.prefix, function(error, names) {
+    fs.readdir(self.initd.prefix, function (error, names) {
         if (error) {
             return;
         }
 
-        var _pop = function() {
+        var _pop = function () {
             if (names.length === 0) {
                 callback({
                     end: true,
@@ -110,10 +113,10 @@ FSTransport.prototype.list = function(paramd, callback) {
             var result = self.initd.unchannel(self.initd, folder);
             if (result) {
                 if (callback({
-                    id: result[0],
-                })) {
+                        id: result[0],
+                    })) {
                     names = [];
-                };
+                }
 
                 _pop();
             }
@@ -128,7 +131,7 @@ FSTransport.prototype.list = function(paramd, callback) {
  *  <p>
  *  NOT FINISHED
  */
-FSTransport.prototype.added = function(paramd, callback) {
+FSTransport.prototype.added = function (paramd, callback) {
     var self = this;
 
     if (arguments.length === 1) {
@@ -142,7 +145,7 @@ FSTransport.prototype.added = function(paramd, callback) {
 /**
  *  See {iotdb.transporter.Transport#about} for documentation.
  */
-FSTransport.prototype.about = function(paramd, callback) {
+FSTransport.prototype.about = function (paramd, callback) {
     var self = this;
 
     self._validate_about(paramd, callback);
@@ -157,41 +160,41 @@ FSTransport.prototype.about = function(paramd, callback) {
 /**
  *  Flat files - read and if it exists return [ id, flat_band ]
  */
-FSTransport.prototype._about_flat = function(paramd, callback) {
+FSTransport.prototype._about_flat = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
 
     fs.readFile(channel, {
         encoding: 'utf8'
-    }, function(error, doc) {
+    }, function (error, doc) {
         if (error) {
             return callback({
-                id: paramd.id, 
+                id: paramd.id,
                 bands: null,
                 error: error,
             });
         }
 
         return callback({
-            id: paramd.id, 
-            bands: [ self.initd.flat_band, ],
+            id: paramd.id,
+            bands: [self.initd.flat_band, ],
         });
     });
 };
 
 /**
  */
-FSTransport.prototype._about_normal = function(paramd, callback) {
+FSTransport.prototype._about_normal = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
     var bands = [];
 
-    fs.readdir(channel, function(error, names) {
+    fs.readdir(channel, function (error, names) {
         if (error) {
             return;
         }
 
-        var _pop = function() {
+        var _pop = function () {
             if (names.length === 0) {
                 callback({
                     id: paramd.id,
@@ -210,7 +213,7 @@ FSTransport.prototype._about_normal = function(paramd, callback) {
 
             fs.readFile(folder, {
                 encoding: 'utf8'
-            }, function(error, doc) {
+            }, function (error, doc) {
                 if (!error) {
                     bands.push(name);
                 }
@@ -226,7 +229,7 @@ FSTransport.prototype._about_normal = function(paramd, callback) {
 /**
  *  See {iotdb.transporter.Transport#get} for documentation.
  */
-FSTransport.prototype.get = function(paramd, callback) {
+FSTransport.prototype.get = function (paramd, callback) {
     var self = this;
 
     self._validate_get(paramd, callback);
@@ -236,11 +239,11 @@ FSTransport.prototype.get = function(paramd, callback) {
     /* undefined for "don't know"; null for "doesn't exist" */
     fs.readFile(channel, {
         encoding: 'utf8'
-    }, function(error, doc) {
+    }, function (error, doc) {
         if (error) {
             callback({
-                id: paramd.id, 
-                band: paramd.band, 
+                id: paramd.id,
+                band: paramd.band,
                 value: null,
                 error: error,
             });
@@ -248,15 +251,14 @@ FSTransport.prototype.get = function(paramd, callback) {
 
         try {
             callback({
-                id: paramd.id, 
-                band: paramd.band, 
+                id: paramd.id,
+                band: paramd.band,
                 value: self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band),
             });
-        }
-        catch (x) {
+        } catch (x) {
             callback({
-                id: paramd.id, 
-                band: paramd.band, 
+                id: paramd.id,
+                band: paramd.band,
                 value: null,
                 error: new Error("unexpected exception"),
                 exception: x,
@@ -268,7 +270,7 @@ FSTransport.prototype.get = function(paramd, callback) {
 /**
  *  See {iotdb.transporter.Transport#update} for documentation.
  */
-FSTransport.prototype.update = function(paramd, callback) {
+FSTransport.prototype.update = function (paramd, callback) {
     var self = this;
 
     self._validate_update(paramd, callback);
@@ -276,7 +278,7 @@ FSTransport.prototype.update = function(paramd, callback) {
     var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
     var d = self.initd.pack(paramd.value, paramd.id, paramd.band);
 
-    mkdirp(path.dirname(channel), function(error) {
+    mkdirp(path.dirname(channel), function (error) {
         if (error) {
             if (callback) {
                 callback({
@@ -293,7 +295,7 @@ FSTransport.prototype.update = function(paramd, callback) {
 /**
  *  See {iotdb.transporter.Transport#updated} for documentation.
  */
-FSTransport.prototype.updated = function(paramd, callback) {
+FSTransport.prototype.updated = function (paramd, callback) {
     var self = this;
 
     if (arguments.length === 1) {
@@ -307,7 +309,7 @@ FSTransport.prototype.updated = function(paramd, callback) {
     var last_id = null;
     var last_band = null;
 
-    var _doit = function(f) {
+    var _doit = function (f) {
         var result = self.initd.unchannel(self.initd, f);
         if (!result) {
             return;
@@ -335,8 +337,8 @@ FSTransport.prototype.updated = function(paramd, callback) {
         last_time = now;
 
         callback({
-            id: this_id, 
-            band: this_band, 
+            id: this_id,
+            band: this_band,
             value: undefined,
         });
     };
@@ -344,41 +346,40 @@ FSTransport.prototype.updated = function(paramd, callback) {
     watch.createMonitor(self.initd.prefix, function (monitor) {
         monitor.on("created", function (f, stat) {
             _doit(f);
-        })
+        });
         monitor.on("changed", function (f, curr, prev) {
             _doit(f);
-        })
+        });
         monitor.on("removed", function (f, stat) {
             _doit(f);
-        })
-    })
+        });
+    });
 };
 
 /**
  *  See {iotdb.transporter.Transport#remove} for documentation.
  */
-FSTransport.prototype.remove = function(paramd) {
+FSTransport.prototype.remove = function (paramd, callback) {
     var self = this;
 
     self._validate_remove(paramd, callback);
 
     var channel = self.initd.channel(self.initd, paramd.id);
 
-    fs.readdir(channel, function(error, names) {
+    fs.readdir(channel, function (error, names) {
         if (error) {
             return;
         }
 
-        var _pop = function() {
+        var _pop = function () {
             if (names.length === 0) {
-                fs.rmdir(channel, function(error) {
-                });
+                fs.rmdir(channel, function (error) {});
             }
 
             var name = names.pop();
             var folder = path.join(channel, name);
 
-            fs.unlink(folder, function(error) {
+            fs.unlink(folder, function (error) {
                 _pop();
             });
         };
@@ -394,24 +395,24 @@ if (/^win/.test(process.platform)) {
     safe_rex = /[:\/$%#.\]\[]/g;
 }
 
-var _encode = function(s) {
-    return s.replace(safe_rex, function(c) {
+var _encode = function (s) {
+    return s.replace(safe_rex, function (c) {
         return '%' + c.charCodeAt(0).toString(16);
     });
 };
 
-var _decode = function(s) {
+var _decode = function (s) {
     return decodeURIComponent(s);
-}
+};
 
-var _unpack = function(d, id, band) {
+var _unpack = function (d, id, band) {
     return _.d.transform(d, {
         pre: _.ld_compact,
         key: _decode,
     });
 };
 
-var _pack = function(d, id, band) {
+var _pack = function (d, id, band) {
     return _.d.transform(d, {
         pre: _.ld_compact,
         key: _encode,

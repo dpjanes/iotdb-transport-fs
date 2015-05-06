@@ -247,6 +247,7 @@ FSTransport.prototype.get = function (paramd, callback) {
                 value: null,
                 error: error,
             });
+            return;
         }
 
         try {
@@ -256,13 +257,11 @@ FSTransport.prototype.get = function (paramd, callback) {
                 value: self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band),
             });
         } catch (x) {
-            callback({
-                id: paramd.id,
-                band: paramd.band,
-                value: null,
-                error: new Error("unexpected exception"),
-                exception: x,
-            });
+            logger.error({
+                method: "get",
+                cause: "see stack trace",
+                stack: x.stack,
+            }, "exception in callback");
         }
     });
 };
@@ -289,6 +288,10 @@ FSTransport.prototype.update = function (paramd, callback) {
         }
 
         fs.writeFileSync(channel, JSON.stringify(d, null, 2));
+
+        if (callback) {
+            callback(null);
+        }
     });
 };
 

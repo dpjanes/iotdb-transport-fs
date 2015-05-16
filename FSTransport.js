@@ -393,9 +393,9 @@ FSTransport.prototype.remove = function (paramd, callback) {
 
 /* --- internals --- */
 
-var safe_rex = /[\/$%#.\]\[]/g;
+var safe_rex = /[\/$%#\]\[]/g;
 if (/^win/.test(process.platform)) {
-    safe_rex = /[:\/$%#.\]\[]/g;
+    safe_rex = /[:\/$%#\]\[]/g;
 }
 
 var _encode = function (s) {

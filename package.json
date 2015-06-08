@@ -26,7 +26,7 @@
     "main": "index.js", 
     "name": "iotdb-transport-fs", 
     "peerDependencies": {
-        "iotdb": ">=0.7.1"
+        "iotdb": "~0.7.6"
     }, 
     "private": false, 
     "repository": {
@@ -36,5 +36,5 @@
     "scripts": {
         "test": "grunt"
     }, 
-    "version": "0.0.8"
+    "version": "0.0.9"
 }

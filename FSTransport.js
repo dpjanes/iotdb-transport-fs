@@ -63,6 +63,7 @@ var FSTransport = function (initd) {
             decode: _decode,
             pack: _pack,
             unpack: _unpack,
+            user: null,
         },
         iotdb.keystore().get("/transports/FSTransport/initd"), {
             prefix: path.join(process.cwd(), ".iotdb", "fs"),
@@ -114,6 +115,7 @@ FSTransport.prototype.list = function (paramd, callback) {
             if (result) {
                 if (callback({
                         id: result[0],
+                        user: self.initd.user,
                     })) {
                     names = [];
                 }
@@ -178,6 +180,7 @@ FSTransport.prototype._about_flat = function (paramd, callback) {
         return callback({
             id: paramd.id,
             bands: [self.initd.flat_band, ],
+            user: self.initd.user,
         });
     });
 };
@@ -199,6 +202,7 @@ FSTransport.prototype._about_normal = function (paramd, callback) {
                 callback({
                     id: paramd.id,
                     bands: bands,
+                    user: self.initd.user,
                 });
                 return;
             }
@@ -255,6 +259,7 @@ FSTransport.prototype.get = function (paramd, callback) {
                 id: paramd.id,
                 band: paramd.band,
                 value: self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band),
+                user: self.initd.user,
             });
         } catch (x) {
             logger.error({
@@ -290,7 +295,7 @@ FSTransport.prototype.update = function (paramd, callback) {
         fs.writeFileSync(channel, JSON.stringify(d, null, 2));
 
         if (callback) {
-            callback(null);
+            callback(paramd);
         }
     });
 };
@@ -343,6 +348,7 @@ FSTransport.prototype.updated = function (paramd, callback) {
             id: this_id,
             band: this_band,
             value: undefined,
+            user: self.initd.user,
         });
     };
 

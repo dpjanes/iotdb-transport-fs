@@ -64,6 +64,7 @@ var FSTransport = function (initd) {
             pack: _pack,
             unpack: _unpack,
             user: null,
+            check_changed: true,
         },
         iotdb.keystore().get("/transports/FSTransport/initd"), {
             prefix: path.join(process.cwd(), ".iotdb", "fs"),
@@ -279,24 +280,38 @@ FSTransport.prototype.update = function (paramd, callback) {
 
     self._validate_update(paramd, callback);
 
+    if (!callback) {
+        callback = function() {};
+    }
+
     var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
     var d = self.initd.pack(paramd.value, paramd.id, paramd.band);
 
     mkdirp(path.dirname(channel), function (error) {
         if (error) {
-            if (callback) {
-                callback({
-                    error: error
-                });
+            return callback({
+                id: paramd.id,
+                band: paramd.band,
+                error: error
+            });
+        }
+
+        var old_data = null;
+        var new_data = JSON.stringify(d, null, 2);
+        if (self.initd.check_changed) {
+            try {
+                var old_data = fs.readFileSync(channel);
+            } catch (x) {
             }
-            return;
         }
 
-        fs.writeFileSync(channel, JSON.stringify(d, null, 2));
-
-        if (callback) {
-            callback(paramd);
+        if (new_data === old_data) {
+            console.log("UNCHANGED");
+        } else {
+            fs.writeFileSync(channel, new_data);
         }
+
+        return callback(paramd);
     });
 };
 

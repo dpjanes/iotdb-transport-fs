@@ -23,6 +23,7 @@
 "use strict";
 
 var iotdb = require('iotdb');
+var iotdb_transport = require('iotdb-transport');
 var _ = iotdb._;
 var bunyan = iotdb.bunyan;
 
@@ -50,15 +51,15 @@ var _pack;
 /**
  *  File System based Transport
  *  <p>
- *  See {iotdb.transporter.Transport#Transport} for documentation.
+ *  See {iotdb_transport.Transport#Transport} for documentation.
  */
 var FSTransport = function (initd) {
     var self = this;
 
     self.initd = _.defaults(
         initd, {
-            channel: iotdb.transporter.channel,
-            unchannel: iotdb.transporter.unchannel,
+            channel: iotdb_transport.channel,
+            unchannel: iotdb_transport.unchannel,
             encode: _encode,
             decode: _decode,
             pack: _pack,
@@ -79,12 +80,13 @@ var FSTransport = function (initd) {
     mkdirp.sync(self.initd.prefix, function (error) {});
 };
 
-FSTransport.prototype = new iotdb.transporter.Transport();
+FSTransport.prototype = new iotdb_transport.Transport();
+FSTransport.prototype._class = "FSTransport";
 
 /* --- methods --- */
 
 /**
- *  See {iotdb.transporter.Transport#list} for documentation.
+ *  See {iotdb_transport.Transport#list} for documentation.
  */
 FSTransport.prototype.list = function (paramd, callback) {
     var self = this;
@@ -130,7 +132,7 @@ FSTransport.prototype.list = function (paramd, callback) {
 };
 
 /**
- *  See {iotdb.transporter.Transport#added} for documentation.
+ *  See {iotdb_transport.Transport#added} for documentation.
  *  <p>
  *  NOT FINISHED
  */
@@ -146,7 +148,7 @@ FSTransport.prototype.added = function (paramd, callback) {
 };
 
 /**
- *  See {iotdb.transporter.Transport#about} for documentation.
+ *  See {iotdb_transport.Transport#about} for documentation.
  */
 FSTransport.prototype.about = function (paramd, callback) {
     var self = this;
@@ -232,7 +234,7 @@ FSTransport.prototype._about_normal = function (paramd, callback) {
 };
 
 /**
- *  See {iotdb.transporter.Transport#get} for documentation.
+ *  See {iotdb_transport.Transport#get} for documentation.
  */
 FSTransport.prototype.get = function (paramd, callback) {
     var self = this;
@@ -246,34 +248,49 @@ FSTransport.prototype.get = function (paramd, callback) {
         encoding: 'utf8'
     }, function (error, doc) {
         if (error) {
-            callback({
+            if (error.code === 'ENOENT') {
+                return callback({
+                    id: paramd.id,
+                    band: paramd.band,
+                    value: {},
+                });
+            }
+
+            return callback({
                 id: paramd.id,
                 band: paramd.band,
                 value: null,
                 error: error,
             });
-            return;
         }
 
         try {
-            callback({
-                id: paramd.id,
-                band: paramd.band,
-                value: self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band),
-                user: self.initd.user,
-            });
+            var value = self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band);
         } catch (x) {
             logger.error({
                 method: "get",
                 cause: "see stack trace",
                 stack: x.stack,
+                channel: channel,
+                doc: doc,
             }, "exception in callback");
+
+            value = null;
+            error = "Cannot unpack document";
         }
+
+        callback({
+            id: paramd.id,
+            band: paramd.band,
+            user: self.initd.user,
+            value: value,
+            error: error,
+        });
     });
 };
 
 /**
- *  See {iotdb.transporter.Transport#update} for documentation.
+ *  See {iotdb_transport.Transport#update} for documentation.
  */
 FSTransport.prototype.update = function (paramd, callback) {
     var self = this;
@@ -306,7 +323,7 @@ FSTransport.prototype.update = function (paramd, callback) {
         }
 
         if (new_data === old_data) {
-            console.log("UNCHANGED");
+            // console.log("UNCHANGED");
         } else {
             fs.writeFileSync(channel, new_data);
         }
@@ -316,7 +333,7 @@ FSTransport.prototype.update = function (paramd, callback) {
 };
 
 /**
- *  See {iotdb.transporter.Transport#updated} for documentation.
+ *  See {iotdb_transport.Transport#updated} for documentation.
  */
 FSTransport.prototype.updated = function (paramd, callback) {
     var self = this;
@@ -381,7 +398,7 @@ FSTransport.prototype.updated = function (paramd, callback) {
 };
 
 /**
- *  See {iotdb.transporter.Transport#remove} for documentation.
+ *  See {iotdb_transport.Transport#remove} for documentation.
  */
 FSTransport.prototype.remove = function (paramd, callback) {
     var self = this;

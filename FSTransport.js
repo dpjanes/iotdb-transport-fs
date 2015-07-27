@@ -103,6 +103,9 @@ FSTransport.prototype.list = function (paramd, callback) {
             return;
         }
 
+        names.sort();
+        names.reverse();
+
         var _pop = function () {
             if (names.length === 0) {
                 callback({
@@ -244,6 +247,7 @@ FSTransport.prototype.get = function (paramd, callback) {
     var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
 
     /* undefined for "don't know"; null for "doesn't exist" */
+    process.nextTick(function() {
     fs.readFile(channel, {
         encoding: 'utf8'
     }, function (error, doc) {
@@ -287,6 +291,7 @@ FSTransport.prototype.get = function (paramd, callback) {
             error: error,
         });
     });
+    });
 };
 
 /**
@@ -325,10 +330,11 @@ FSTransport.prototype.update = function (paramd, callback) {
         if (new_data === old_data) {
             // console.log("UNCHANGED");
         } else {
-            fs.writeFileSync(channel, new_data);
+            fs.writeFile(channel, new_data, function() {
+                return callback(paramd);
+            })
         }
 
-        return callback(paramd);
     });
 };
 

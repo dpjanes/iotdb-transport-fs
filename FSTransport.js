@@ -31,6 +31,7 @@ var fs = require('fs');
 var path = require('path');
 var mkdirp = require('mkdirp');
 var watch = require('watch');
+var rwlock = require('rwlock'); // maybe should be doing file locking?
 
 var util = require('util');
 var url = require('url');
@@ -39,6 +40,9 @@ var logger = bunyan.createLogger({
     name: 'iotdb-transport-fs',
     module: 'FSTransport',
 });
+
+var glock = new rwlock();
+var verbose = false;
 
 /* --- forward definitions --- */
 var _encode;
@@ -76,8 +80,15 @@ var FSTransport = function (initd) {
     /* for consistency but not used */
     self.native = {};
 
+    self.lock = glock;
+
     /* ignore errors - they will occur later anyway */
-    mkdirp.sync(self.initd.prefix, function (error) {});
+    self.lock.writeLock(function (release) {
+        mkdirp.mkdirp(self.initd.prefix, function (error) {
+            release();
+        });
+    });
+
 };
 
 FSTransport.prototype = new iotdb_transport.Transport();
@@ -98,39 +109,47 @@ FSTransport.prototype.list = function (paramd, callback) {
 
     self._validate_list(paramd, callback);
 
-    fs.readdir(self.initd.prefix, function (error, names) {
-        if (error) {
-            return;
-        }
+    self.lock.readLock(function (release) {
+        fs.readdir(self.initd.prefix, function (error, names) {
+            release();
 
-        names.sort();
-        names.reverse();
-
-        var _pop = function () {
-            if (names.length === 0) {
+            if (error) {
                 callback({
+                    error: error,
                     end: true,
                 });
                 return;
             }
 
-            var name = names.pop();
-            var folder = path.join(self.initd.prefix, name);
+            names.sort();
+            names.reverse();
 
-            var result = self.initd.unchannel(self.initd, folder);
-            if (result) {
-                if (callback({
-                        id: result[0],
-                        user: self.initd.user,
-                    })) {
-                    names = [];
+            var _pop = function () {
+                if (names.length === 0) {
+                    callback({
+                        end: true,
+                    });
+                    return;
                 }
 
-                _pop();
-            }
-        };
+                var name = names.pop();
+                var folder = path.join(self.initd.prefix, name);
 
-        _pop();
+                var result = self.initd.unchannel(self.initd, folder);
+                if (result) {
+                    if (callback({
+                            id: result[0],
+                            user: self.initd.user,
+                        })) {
+                        names = [];
+                    }
+
+                    _pop();
+                }
+            };
+
+            _pop();
+        });
     });
 };
 
@@ -172,21 +191,25 @@ FSTransport.prototype._about_flat = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
 
-    fs.readFile(channel, {
-        encoding: 'utf8'
-    }, function (error, doc) {
-        if (error) {
+    self.lock.readLock(function (release) {
+        fs.readFile(channel, {
+            encoding: 'utf8'
+        }, function (error, doc) {
+            release();
+
+            if (error) {
+                return callback({
+                    id: paramd.id,
+                    bands: null,
+                    error: error,
+                });
+            }
+
             return callback({
                 id: paramd.id,
-                bands: null,
-                error: error,
+                bands: [self.initd.flat_band, ],
+                user: self.initd.user,
             });
-        }
-
-        return callback({
-            id: paramd.id,
-            bands: [self.initd.flat_band, ],
-            user: self.initd.user,
         });
     });
 };
@@ -198,41 +221,47 @@ FSTransport.prototype._about_normal = function (paramd, callback) {
     var channel = self.initd.channel(self.initd, paramd.id);
     var bands = [];
 
-    fs.readdir(channel, function (error, names) {
-        if (error) {
-            return;
-        }
+    self.lock.readLock(function (release) {
+        fs.readdir(channel, function (error, names) {
+            release();
 
-        var _pop = function () {
-            if (names.length === 0) {
-                callback({
-                    id: paramd.id,
-                    bands: bands,
-                    user: self.initd.user,
-                });
+            if (error) {
                 return;
             }
 
-            var name = names.pop();
-            var folder = path.join(channel, name);
-            var result = self.initd.unchannel(self.initd, folder);
-            if (!result) {
-                _pop();
-                return;
-            }
+            names.sort();
+            names.reverse();
 
-            fs.readFile(folder, {
-                encoding: 'utf8'
-            }, function (error, doc) {
-                if (!error) {
-                    bands.push(name);
+            var _pop = function () {
+                if (names.length === 0) {
+                    return callback({
+                        id: paramd.id,
+                        bands: bands,
+                        user: self.initd.user,
+                    });
                 }
 
-                _pop();
-            });
-        };
+                var name = names.pop();
+                var folder = path.join(channel, name);
+                var result = self.initd.unchannel(self.initd, folder);
+                if (!result) {
+                    _pop();
+                    return;
+                }
 
-        _pop();
+                fs.readFile(folder, {
+                    encoding: 'utf8'
+                }, function (error, doc) {
+                    if (!error) {
+                        bands.push(name);
+                    }
+
+                    _pop();
+                });
+            };
+
+            _pop();
+        });
     });
 };
 
@@ -247,50 +276,54 @@ FSTransport.prototype.get = function (paramd, callback) {
     var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
 
     /* undefined for "don't know"; null for "doesn't exist" */
-    process.nextTick(function() {
-    fs.readFile(channel, {
-        encoding: 'utf8'
-    }, function (error, doc) {
-        if (error) {
-            if (error.code === 'ENOENT') {
+    self.lock.readLock(function (release) {
+        if (verbose) console.log("READ.START", channel);
+        fs.readFile(channel, {
+            encoding: 'utf8'
+        }, function (error, doc) {
+            if (verbose) console.log("READ.END", channel);
+            release();
+
+            if (error) {
+                if (error.code === 'ENOENT') {
+                    return callback({
+                        id: paramd.id,
+                        band: paramd.band,
+                        value: {},
+                    });
+                }
+
                 return callback({
                     id: paramd.id,
                     band: paramd.band,
-                    value: {},
+                    value: null,
+                    error: error,
                 });
+            }
+
+            try {
+                var value = self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band);
+            } catch (x) {
+                logger.error({
+                    method: "get",
+                    cause: "see stack trace",
+                    stack: x.stack,
+                    channel: channel,
+                    doc: doc,
+                }, "exception in callback");
+
+                value = null;
+                error = "Cannot unpack document";
             }
 
             return callback({
                 id: paramd.id,
                 band: paramd.band,
-                value: null,
+                user: self.initd.user,
+                value: value,
                 error: error,
             });
-        }
-
-        try {
-            var value = self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band);
-        } catch (x) {
-            logger.error({
-                method: "get",
-                cause: "see stack trace",
-                stack: x.stack,
-                channel: channel,
-                doc: doc,
-            }, "exception in callback");
-
-            value = null;
-            error = "Cannot unpack document";
-        }
-
-        callback({
-            id: paramd.id,
-            band: paramd.band,
-            user: self.initd.user,
-            value: value,
-            error: error,
         });
-    });
     });
 };
 
@@ -309,32 +342,41 @@ FSTransport.prototype.update = function (paramd, callback) {
     var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
     var d = self.initd.pack(paramd.value, paramd.id, paramd.band);
 
-    mkdirp(path.dirname(channel), function (error) {
-        if (error) {
-            return callback({
-                id: paramd.id,
-                band: paramd.band,
-                error: error
-            });
-        }
-
-        var old_data = null;
-        var new_data = JSON.stringify(d, null, 2);
-        if (self.initd.check_changed) {
-            try {
-                var old_data = fs.readFileSync(channel);
-            } catch (x) {
+    self.lock.writeLock(function (release) {
+        mkdirp.mkdirp(path.dirname(channel), function (error) {
+            if (error) {
+                release();
+                return callback({
+                    id: paramd.id,
+                    band: paramd.band,
+                    error: error
+                });
             }
-        }
 
-        if (new_data === old_data) {
-            // console.log("UNCHANGED");
-        } else {
-            fs.writeFile(channel, new_data, function() {
-                return callback(paramd);
-            })
-        }
+            var old_data = null;
+            var new_data = JSON.stringify(d, null, 2);
+            if (self.initd.check_changed) {
+                try {
+                    var old_data = fs.readFileSync(channel);
+                } catch (x) {
+                }
+            }
 
+            if (new_data === old_data) {
+                // console.log("UNCHANGED");
+                release();
+            } else {
+                if (verbose) console.log("WRITE.START", channel);
+                fs.writeFile(channel, new_data, function() {
+                    if (verbose) console.log("WRITE.END", channel);
+                    release();
+                    process.nextTick(function() {
+                        return callback(paramd);
+                    });
+                });
+            }
+
+        });
     });
 };
 
@@ -413,25 +455,32 @@ FSTransport.prototype.remove = function (paramd, callback) {
 
     var channel = self.initd.channel(self.initd, paramd.id);
 
-    fs.readdir(channel, function (error, names) {
-        if (error) {
-            return;
-        }
-
-        var _pop = function () {
-            if (names.length === 0) {
-                fs.rmdir(channel, function (error) {});
+    self.lock.writeLock(function (release) {
+        fs.readdir(channel, function (error, names) {
+            if (error) {
+                return;
             }
 
-            var name = names.pop();
-            var folder = path.join(channel, name);
+            names.sort();
+            names.reverse();
 
-            fs.unlink(folder, function (error) {
-                _pop();
-            });
-        };
+            var _pop = function () {
+                if (names.length === 0) {
+                    fs.rmdir(channel, function (error) {});
+                    release();
+                    return;
+                }
 
-        _pop();
+                var name = names.pop();
+                var folder = path.join(channel, name);
+
+                fs.unlink(folder, function (error) {
+                    _pop();
+                });
+            };
+
+            _pop();
+        });
     });
 };
 

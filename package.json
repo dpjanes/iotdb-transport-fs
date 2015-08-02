@@ -4,6 +4,7 @@
         "url": "https://github.com/dpjanes/iotdb-transport-fs/issues"
     }, 
     "dependencies": {
+        "rwlock": "",
         "mkdirp": "~0.5.1", 
         "validate": "~2.1.6", 
         "watch": "~0.16.0"

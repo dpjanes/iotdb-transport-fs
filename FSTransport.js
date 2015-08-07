@@ -145,6 +145,8 @@ FSTransport.prototype.list = function (paramd, callback) {
                     }
 
                     _pop();
+                } else {
+                    _pop();
                 }
             };
 

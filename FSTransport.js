@@ -433,15 +433,21 @@ FSTransport.prototype.updated = function (paramd, callback) {
         });
     };
 
-    watch.createMonitor(self.initd.prefix, function (monitor) {
-        monitor.on("created", function (f, stat) {
-            _doit(f);
-        });
-        monitor.on("changed", function (f, curr, prev) {
-            _doit(f);
-        });
-        monitor.on("removed", function (f, stat) {
-            _doit(f);
+    self.lock.writeLock(function (release) {
+        watch.createMonitor(self.initd.prefix, function (monitor) {
+            monitor.on("created", function (f, stat) {
+                _doit(f);
+            });
+            monitor.on("changed", function (f, curr, prev) {
+                _doit(f);
+            });
+            monitor.on("removed", function (f, stat) {
+                _doit(f);
+            });
+
+            setTimeout(function() {
+                release();
+            }, 1000);
         });
     });
 };

@@ -28,7 +28,7 @@
     "name": "iotdb-transport-fs", 
     "peerDependencies": {
         "iotdb": "~0.9.3", 
-        "iotdb-transport": "~0.0.8"
+        "iotdb-transport": "~0.0.9"
     }, 
     "private": false, 
     "repository": {
@@ -38,5 +38,5 @@
     "scripts": {
         "test": "grunt"
     }, 
-    "version": "0.0.14"
+    "version": "0.0.15"
 }

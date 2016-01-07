@@ -290,7 +290,7 @@ FSTransport.prototype.get = function (paramd, callback) {
                     return callback({
                         id: paramd.id,
                         band: paramd.band,
-                        value: {},
+                        value: null,
                     });
                 }
 

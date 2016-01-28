@@ -331,7 +331,7 @@ FSTransport.prototype.get = function (paramd, callback) {
 /**
  *  See {iotdb_transport.Transport#update} for documentation.
  */
-FSTransport.prototype.update = function (paramd, callback) {
+FSTransport.prototype.put = function (paramd, callback) {
     var self = this;
 
     self._validate_update(paramd, callback);

@@ -24,6 +24,7 @@
 
 var iotdb = require('iotdb');
 var iotdb_transport = require('iotdb-transport');
+var errors = iotdb_transport.errors;
 var _ = iotdb._;
 
 var fs = require('fs');
@@ -171,24 +172,24 @@ FSTransport.prototype.added = function (paramd, callback) {
 };
 
 /**
- *  See {iotdb_transport.Transport#about} for documentation.
+ *  See {iotdb_transport.Transport#bands} for documentation.
  */
-FSTransport.prototype.about = function (paramd, callback) {
+FSTransport.prototype.bands = function (paramd, callback) {
     var self = this;
 
-    self._validate_about(paramd, callback);
+    self._validate_bands(paramd, callback);
 
     if (self.initd.flat_band) {
-        self._about_flat(paramd, callback);
+        self._bands_flat(paramd, callback);
     } else {
-        self._about_normal(paramd, callback);
+        self._bands(paramd, callback);
     }
 };
 
 /**
  *  Flat files - read and if it exists return [ id, flat_band ]
  */
-FSTransport.prototype._about_flat = function (paramd, callback) {
+FSTransport.prototype._bands_flat = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
 
@@ -202,13 +203,16 @@ FSTransport.prototype._about_flat = function (paramd, callback) {
                 return callback({
                     id: paramd.id,
                     bands: null,
-                    error: error,
+                    error: new errors.NotFound(),
                 });
             }
 
+            var bandd = {};
+            bandd[self.initd.flat_band] = null;
+
             return callback({
                 id: paramd.id,
-                bands: [self.initd.flat_band, ],
+                bandd: bandd,
                 user: self.initd.user,
             });
         });
@@ -217,10 +221,10 @@ FSTransport.prototype._about_flat = function (paramd, callback) {
 
 /**
  */
-FSTransport.prototype._about_normal = function (paramd, callback) {
+FSTransport.prototype._bands = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
-    var bands = [];
+    var bandd = {};
 
     self.lock.readLock(function (release) {
         fs.readdir(channel, function (error, names) {
@@ -237,7 +241,7 @@ FSTransport.prototype._about_normal = function (paramd, callback) {
                 if (names.length === 0) {
                     return callback({
                         id: paramd.id,
-                        bands: bands,
+                        bandd: bandd,
                         user: self.initd.user,
                     });
                 }
@@ -254,7 +258,7 @@ FSTransport.prototype._about_normal = function (paramd, callback) {
                     encoding: 'utf8'
                 }, function (error, doc) {
                     if (!error) {
-                        bands.push(name);
+                        bandd[name] = null;
                     }
 
                     _pop();

@@ -183,6 +183,9 @@ FSTransport.prototype._bands_flat = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
 
+    var bd = _.shallowCopy(paramd);
+    bd.bandd = {};
+
     self.lock.readLock(function (release) {
         fs.readFile(channel, {
             encoding: 'utf8'
@@ -190,21 +193,12 @@ FSTransport.prototype._bands_flat = function (paramd, callback) {
             release();
 
             if (error) {
-                return callback({
-                    id: paramd.id,
-                    bands: null,
-                    error: new errors.NotFound(),
-                });
+                return callback(new errors.NotFound(), bd);
             }
 
-            var bandd = {};
-            bandd[self.initd.flat_band] = null;
+            bd.bandd[self.initd.flat_band] = null;
 
-            return callback({
-                id: paramd.id,
-                bandd: bandd,
-                user: self.initd.user,
-            });
+            return callback(null, bd);
         });
     });
 };
@@ -214,14 +208,16 @@ FSTransport.prototype._bands_flat = function (paramd, callback) {
 FSTransport.prototype._bands = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
-    var bandd = {};
+
+    var bd = _.shallowCopy(paramd);
+    bd.bandd = {};
 
     self.lock.readLock(function (release) {
         fs.readdir(channel, function (error, names) {
             release();
 
             if (error) {
-                return;
+                return callback(new errors.NotFound(), bd);
             }
 
             names.sort();
@@ -229,11 +225,7 @@ FSTransport.prototype._bands = function (paramd, callback) {
 
             var _pop = function () {
                 if (names.length === 0) {
-                    return callback({
-                        id: paramd.id,
-                        bandd: bandd,
-                        user: self.initd.user,
-                    });
+                    return callback(null, bd);
                 }
 
                 var name = names.pop();
@@ -248,7 +240,7 @@ FSTransport.prototype._bands = function (paramd, callback) {
                     encoding: 'utf8'
                 }, function (error, doc) {
                     if (!error) {
-                        bandd[name] = null;
+                        bd.bandd[name] = null;
                     }
 
                     _pop();

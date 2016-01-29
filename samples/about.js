@@ -12,8 +12,13 @@ var FSTransport = require('../FSTransport').FSTransport;
 
 var transport = new FSTransport({
 });
-transport.about({
+transport.bands({
     id: "MyThingID", 
-}, function(ad) {
+}, function(error, ad) {
+    if (error) {
+        console.log("#", error);
+        return;
+    }
+
     console.log("+", ad);
 });

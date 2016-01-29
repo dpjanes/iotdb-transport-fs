@@ -15,11 +15,12 @@ var transport = new FSTransport({
     flat_band: "megatron",
     prefix: ".flat",
 });
-transport.about({
+transport.bands({
     id: "MyThingID", 
-}, function(ad) {
-    if (ad.end) {
-        break;
+}, function(error, ad) {
+    if (error) {
+        console.log("#", error);
+        return;
     }
 
     console.log("+", ad);

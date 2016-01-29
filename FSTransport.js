@@ -311,7 +311,7 @@ FSTransport.prototype.get = function (paramd, callback) {
                     doc: doc,
                 }, "exception in callback");
 
-                return callback(new errors.InternalError(_.error.message(x)), {
+                return callback(new errors.Internal(_.error.message(x)), {
                     id: paramd.id,
                     band: paramd.band,
                     user: self.initd.user,
@@ -331,22 +331,16 @@ FSTransport.prototype.put = function (paramd, callback) {
 
     self._validate_update(paramd, callback);
 
-    if (!callback) {
-        callback = function() {};
-    }
-
     var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
     var d = self.initd.pack(paramd.value, paramd.id, paramd.band);
+
+    var pd = _.shallowCopy(paramd);
 
     self.lock.writeLock(function (release) {
         mkdirp.mkdirp(path.dirname(channel), function (error) {
             if (error) {
                 release();
-                return callback({
-                    id: paramd.id,
-                    band: paramd.band,
-                    error: error
-                });
+                return callback(error, pd);
             }
 
             var old_data = null;
@@ -367,7 +361,7 @@ FSTransport.prototype.put = function (paramd, callback) {
                     if (verbose) console.log("WRITE.END", channel);
                     release();
                     process.nextTick(function() {
-                        return callback(paramd);
+                        return callback(null, pd);
                     });
                 });
             }

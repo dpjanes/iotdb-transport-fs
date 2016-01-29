@@ -102,11 +102,6 @@ FSTransport.prototype._class = "FSTransport";
 FSTransport.prototype.list = function (paramd, callback) {
     var self = this;
 
-    if (arguments.length === 1) {
-        paramd = {};
-        callback = arguments[0];
-    }
-
     self._validate_list(paramd, callback);
 
     self.lock.readLock(function (release) {
@@ -162,11 +157,6 @@ FSTransport.prototype.list = function (paramd, callback) {
  */
 FSTransport.prototype.added = function (paramd, callback) {
     var self = this;
-
-    if (arguments.length === 1) {
-        paramd = {};
-        callback = arguments[0];
-    }
 
     self._validate_added(paramd, callback);
 };
@@ -390,11 +380,6 @@ FSTransport.prototype.put = function (paramd, callback) {
  */
 FSTransport.prototype.updated = function (paramd, callback) {
     var self = this;
-
-    if (arguments.length === 1) {
-        paramd = {};
-        callback = arguments[0];
-    }
 
     self._validate_updated(paramd, callback);
 

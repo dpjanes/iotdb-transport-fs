@@ -401,7 +401,7 @@ FSTransport.prototype.updated = function (paramd, callback) {
         last_band = this_band;
         last_time = now;
 
-        callback({
+        callback(null, {
             id: this_id,
             band: this_band,
             value: undefined,

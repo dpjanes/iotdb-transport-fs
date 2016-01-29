@@ -23,7 +23,12 @@ p.get({
     }
     console.log("+", "get", gd.id, gd.band, gd.value);
 });
-p.updated(function(ud) {
+p.updated(function(error, ud) {
+    if (error) {
+        console.log("#", error);
+        return;
+    }
+
     if (ud.value === undefined) {
         p.get(ud, function(error, gd) {
             if (error) {

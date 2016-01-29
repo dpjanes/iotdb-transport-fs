@@ -14,9 +14,14 @@ var p = new FSTransport({
     flat_band: "meta",
     prefix: ".flat",
 });
-p.list(function(ld) {
-    if (ld.end) {
+p.list(function(error, ld) {
+    if (error) {
+        console.log("#", "error", error);
         return;
+    }
+    if (!ld) {
+        console.log("+", "<end>");
+        break;
     }
 
     console.log("+", ld.id);

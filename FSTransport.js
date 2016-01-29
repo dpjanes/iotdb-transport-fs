@@ -101,6 +101,7 @@ FSTransport.prototype._class = "FSTransport";
  */
 FSTransport.prototype.list = function (paramd, callback) {
     var self = this;
+    var ld;
 
     self._validate_list(paramd, callback);
 
@@ -109,10 +110,8 @@ FSTransport.prototype.list = function (paramd, callback) {
             release();
 
             if (error) {
-                callback({
-                    error: error,
-                    end: true,
-                });
+                ld = _.shallowCopy(paramd);
+                callback(error, ld);
                 return;
             }
 
@@ -121,9 +120,7 @@ FSTransport.prototype.list = function (paramd, callback) {
 
             var _pop = function () {
                 if (names.length === 0) {
-                    callback({
-                        end: true,
-                    });
+                    callback(null, null);
                     return;
                 }
 
@@ -132,10 +129,9 @@ FSTransport.prototype.list = function (paramd, callback) {
 
                 var result = self.initd.unchannel(self.initd, folder);
                 if (result) {
-                    if (callback({
-                            id: result[0],
-                            user: self.initd.user,
-                        })) {
+                    ld = _.shallowCopy(paramd);
+                    ld.id = result[0];
+                    if (callback(null, ld)) {
                         names = [];
                     }
 

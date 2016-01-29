@@ -281,23 +281,27 @@ FSTransport.prototype.get = function (paramd, callback) {
 
             if (error) {
                 if (error.code === 'ENOENT') {
-                    return callback({
+                    return callback(new errors.NotFound(), {
                         id: paramd.id,
                         band: paramd.band,
                         value: null,
                     });
                 }
 
-                return callback({
+                return callback(error, {
                     id: paramd.id,
                     band: paramd.band,
                     value: null,
-                    error: error,
                 });
             }
 
             try {
-                var value = self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band);
+                return callback(null, {
+                    id: paramd.id,
+                    band: paramd.band,
+                    user: self.initd.user,
+                    value: self.initd.unpack(JSON.parse(doc), paramd.id, paramd.band),
+                });
             } catch (x) {
                 logger.error({
                     method: "get",
@@ -307,17 +311,14 @@ FSTransport.prototype.get = function (paramd, callback) {
                     doc: doc,
                 }, "exception in callback");
 
-                value = null;
-                error = "Cannot unpack document";
+                return callback(new errors.InternalError(_.error.message(x)), {
+                    id: paramd.id,
+                    band: paramd.band,
+                    user: self.initd.user,
+                    value: null,
+                });
             }
 
-            return callback({
-                id: paramd.id,
-                band: paramd.band,
-                user: self.initd.user,
-                value: value,
-                error: error,
-            });
         });
     });
 };

@@ -18,7 +18,11 @@ p.updated({
     band: "meta", 
 }, function(ud) {
     if (ud.value === undefined) {
-        p.get(ud, function(gd) {
+        p.get(ud, function(error, gd) {
+            if (error) {
+                console.log("#", error);
+                return;
+            }
             console.log("+", gd.id, gd.band, gd.value);
         });
     } else {

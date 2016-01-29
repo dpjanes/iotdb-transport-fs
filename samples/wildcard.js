@@ -16,12 +16,20 @@ var p = new FSTransport({
 p.get({
     id: "MyThingID", 
     band: "meta", 
-}, function(gd) {
+}, function(error, gd) {
+    if (error) {
+        console.log("#", error);
+        return;
+    }
     console.log("+", "get", gd.id, gd.band, gd.value);
 });
 p.updated(function(ud) {
     if (ud.value === undefined) {
-        p.get(ud, function(gd) {
+        p.get(ud, function(error, gd) {
+            if (error) {
+                console.log("#", error);
+                return;
+            }
             console.log("+", gd.id, gd.band, gd.value);
         });
     } else {

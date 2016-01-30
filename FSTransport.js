@@ -432,11 +432,20 @@ FSTransport.prototype.remove = function (paramd, callback) {
 
     self._validate_remove(paramd, callback);
 
+    var rd = _.shallowCopy(paramd);
+    delete rd.band;
+    delete rd.value;
+
     var channel = self.initd.channel(self.initd, paramd.id);
 
     self.lock.writeLock(function (release) {
         fs.readdir(channel, function (error, names) {
             if (error) {
+                if (error.code === 'ENOENT') {
+                    callback(new errors.NotFound(), rd);
+                } else {
+                    callback(error, rd);
+                }
                 return;
             }
 
@@ -447,6 +456,8 @@ FSTransport.prototype.remove = function (paramd, callback) {
                 if (names.length === 0) {
                     fs.rmdir(channel, function (error) {});
                     release();
+
+                    callback(null, rd);
                     return;
                 }
 

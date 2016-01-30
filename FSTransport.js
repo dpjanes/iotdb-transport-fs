@@ -110,7 +110,7 @@ FSTransport.prototype.list = function (paramd, callback) {
             release();
 
             if (error) {
-                ld = _.shallowCopy(paramd);
+                ld = _.d.clone.shallow(paramd);
                 callback(error, ld);
                 return;
             }
@@ -129,7 +129,7 @@ FSTransport.prototype.list = function (paramd, callback) {
 
                 var result = self.initd.unchannel(self.initd, folder);
                 if (result) {
-                    ld = _.shallowCopy(paramd);
+                    ld = _.d.clone.shallow(paramd);
                     ld.id = result[0];
                     if (callback(null, ld)) {
                         names = [];
@@ -179,7 +179,7 @@ FSTransport.prototype._bands_flat = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
 
-    var bd = _.shallowCopy(paramd);
+    var bd = _.d.clone.shallow(paramd);
     bd.bandd = {};
 
     self.lock.readLock(function (release) {
@@ -205,7 +205,7 @@ FSTransport.prototype._bands = function (paramd, callback) {
     var self = this;
     var channel = self.initd.channel(self.initd, paramd.id);
 
-    var bd = _.shallowCopy(paramd);
+    var bd = _.d.clone.shallow(paramd);
     bd.bandd = {};
 
     self.lock.readLock(function (release) {
@@ -322,7 +322,7 @@ FSTransport.prototype.put = function (paramd, callback) {
     var channel = self.initd.channel(self.initd, paramd.id, paramd.band);
     var d = self.initd.pack(paramd.value, paramd.id, paramd.band);
 
-    var pd = _.shallowCopy(paramd);
+    var pd = _.d.clone.shallow(paramd);
 
     self.lock.writeLock(function (release) {
         mkdirp.mkdirp(path.dirname(channel), function (error) {
@@ -432,7 +432,7 @@ FSTransport.prototype.remove = function (paramd, callback) {
 
     self._validate_remove(paramd, callback);
 
-    var rd = _.shallowCopy(paramd);
+    var rd = _.d.clone.shallow(paramd);
     delete rd.band;
     delete rd.value;
 

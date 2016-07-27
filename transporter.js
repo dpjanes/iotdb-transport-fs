@@ -126,14 +126,14 @@ const make = (initd, bddd) => {
                 const new_data = JSON.stringify(outd, null, 2);
                 if (_initd.check_changed) {
                     try {
-                        console.log("HERE:READ", channel);
+                        // console.log("HERE:READ", channel);
                         old_data = fs.readFileSync(channel);
                     } catch (x) {
                     }
                 }
 
                 if (new_data !== old_data) {
-                    console.log("HERE:WRITE", channel);
+                    // console.log("HERE:WRITE", channel);
                     fs.writeFileSync(channel, new_data);
                 }
 

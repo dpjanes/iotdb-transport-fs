@@ -3,12 +3,14 @@
  *
  *  David Janes
  *  IOTDB.org
- *  2016-07-24
+ *  2016-07-27
  */
+
+const path = require("path");
 
 const transporter = require("../transporter");
 const transport = transporter.make({
-    prefix: "samples/things",
+    prefix: path.join(__dirname, "things"),
 });
 
 exports.transport = transport;

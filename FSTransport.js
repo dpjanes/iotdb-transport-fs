@@ -63,7 +63,7 @@ var FSTransport = function (initd) {
     self.initd = _.defaults(
         initd, {
             channel: iotdb_transport.channel,
-            unchannel: iotdb_transport.unchannel,
+            unchannel: iotdb_transport.old_unchannel,
             encode: _encode,
             decode: _decode,
             pack: _pack,

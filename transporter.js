@@ -126,12 +126,14 @@ const make = (initd, bddd) => {
                 const new_data = JSON.stringify(outd, null, 2);
                 if (_initd.check_changed) {
                     try {
+                        console.log("HERE:READ", channel);
                         old_data = fs.readFileSync(channel);
                     } catch (x) {
                     }
                 }
 
                 if (new_data !== old_data) {
+                    console.log("HERE:WRITE", channel);
                     fs.writeFileSync(channel, new_data);
                 }
 
@@ -228,6 +230,7 @@ const make = (initd, bddd) => {
 
         // this could be Rxed
         const _doit = function (f) {
+            console.log("HERE:SEE", f);
             const cd = _initd.unchannel(_initd, f);
             if (!cd) {
                 return;
@@ -255,7 +258,7 @@ const make = (initd, bddd) => {
             observer.onNext(d);
         };
 
-        _lock.writeLock(function (release) {
+        // _lock.writeLock(function (release) {
             watch.createMonitor(_initd.prefix, function (monitor) {
                 monitor.on("created", function (f, stat) {
                     _doit(f);
@@ -268,10 +271,10 @@ const make = (initd, bddd) => {
                 });
 
                 setTimeout(function() {
-                    release();
+                    // release();
                 }, 1000);
             });
-        });
+        // });
     };
 
 

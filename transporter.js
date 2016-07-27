@@ -74,7 +74,7 @@ const make = (initd, bddd) => {
     const _initd = _.d.compose.shallow(
         initd, {
             channel: iotdb_transport.channel,
-            unchannel: iotdb_transport.unchanneld,
+            unchannel: iotdb_transport.unchannel,
             encode: s => s.replace(safe_rex, (c) => '%' + c.charCodeAt(0).toString(16)),
             decode: s => decodeURIComponent(s),
             unpack: (d, id, band) => _.d.transform(d, { pre: _.ld_compact, key: _initd._decode, }),
@@ -230,7 +230,6 @@ const make = (initd, bddd) => {
 
         // this could be Rxed
         const _doit = function (f) {
-            console.log("HERE:SEE", f);
             const cd = _initd.unchannel(_initd, f);
             if (!cd) {
                 return;

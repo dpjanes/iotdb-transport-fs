@@ -101,10 +101,10 @@ const make = (initd, bddd) => {
                     .map(folder => _initd.unchannel(_initd, folder))
                     .filter(cd => cd.id)
                     .forEach(cd => {
-                        d = _.d.clone.shallow(d);
-                        d.id = cd.id;
+                        const rd = _.d.clone.shallow(d);
+                        rd.id = cd.id;
 
-                        observer.onNext(d);
+                        observer.onNext(rd);
                     });
 
                 observer.onCompleted();
@@ -122,19 +122,24 @@ const make = (initd, bddd) => {
                     return observer.onError(error);
                 }
 
-                let old_data = null;
-                const new_data = JSON.stringify(outd, null, 2);
-                if (_initd.check_changed) {
-                    try {
-                        // console.log("HERE:READ", channel);
-                        old_data = fs.readFileSync(channel);
-                    } catch (x) {
-                    }
+                const rd = _.d.clone.shallow(d);
+                rd.value = _.timestamp.add(rd.value);
+
+                let old_value = null;
+                try {
+                    old_value = JSON.parse(fs.readFileSync(channel));
+                } catch (x) {
                 }
 
-                if (new_data !== old_data) {
-                    // console.log("HERE:WRITE", channel);
-                    fs.writeFileSync(channel, new_data);
+                if (_.timestamp.check.dictionary(old_value, rd.value) === true) {
+                    fs.writeFileSync(channel, JSON.stringify(rd.value, null, 2));
+                } else if (d.silent_timestamp === false) {
+                    rd.value = old_value;
+                } else {
+                    // console.log(old_value["@timestamp"], rd.value["@timestamp"])
+                    console.log(old_value, rd.value);
+                    release();
+                    return observer.onError(new errors.Timestamp());
                 }
 
                 release();
@@ -252,9 +257,9 @@ const make = (initd, bddd) => {
             lastd = cd;
             last_time = now;
 
-            d = _.d.compose.shallow(cd, d);
+            const rd = _.d.compose.shallow(cd, d);
 
-            observer.onNext(d);
+            observer.onNext(rd);
         };
 
         // _lock.writeLock(function (release) {

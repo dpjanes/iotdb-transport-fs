@@ -77,8 +77,8 @@ const make = (initd, bddd) => {
             unchannel: iotdb_transport.unchannel,
             encode: s => s.replace(safe_rex, (c) => '%' + c.charCodeAt(0).toString(16)),
             decode: s => decodeURIComponent(s),
-            unpack: (d, id, band) => _.d.transform(d, { pre: _.ld_compact, key: _initd._decode, }),
-            pack: (d, id, band) => _.d.transform(d, { pre: _.ld_compact, key: _initd._encode, }),
+            unpack: (doc, d) => JSON.parse(doc), 
+            pack: d => JSON.stringify(d.value, null, 2),
         },
         iotdb.keystore().get("/transports/FSTransport/initd"), {
             prefix: ""
@@ -114,7 +114,6 @@ const make = (initd, bddd) => {
 
     self.rx.put = (observer, d) => {
         const channel = _initd.channel(_initd, d.id, d.band);
-        const outd = _initd.pack(d.value, d.id, d.band);
 
         _lock.writeLock(release => {
             mkdirp.mkdirp(path.dirname(channel), error => {
@@ -132,20 +131,18 @@ const make = (initd, bddd) => {
                 }
 
                 if (_.timestamp.check.dictionary(old_value, rd.value) === true) {
-                    fs.writeFileSync(channel, JSON.stringify(rd.value, null, 2));
-                } else if (d.silent_timestamp === false) {
-                    rd.value = old_value;
-                } else {
-                    // console.log(old_value["@timestamp"], rd.value["@timestamp"])
-                    console.log(old_value, rd.value);
+                    fs.writeFileSync(channel, _initd.pack(rd));
                     release();
-                    return observer.onError(new errors.Timestamp());
+                    observer.onNext(d);
+                    observer.onCompleted();
+                } else if (d.silent_timestamp === false) {
+                    release();
+                    observer.onCompleted();
+                } else {
+                    release();
+                    observer.onError(new errors.Timestamp());
                 }
 
-                release();
-
-                observer.onNext(d);
-                observer.onCompleted();
             });
         });
     };
@@ -165,9 +162,10 @@ const make = (initd, bddd) => {
                     }
                 }
 
-                d.value = _initd.unpack(JSON.parse(doc), d.id, d.band);
+                const rd = _.d.clone.shallow(d);
+                rd.value = _initd.unpack(doc, rd);
 
-                observer.onNext(d);
+                observer.onNext(rd);
                 observer.onCompleted();
             });
         });
@@ -184,9 +182,10 @@ const make = (initd, bddd) => {
                     release();
 
                     if (!error) {
-                        d.band = _initd.flat_band;
+                        const rd = _.d.clone.shallow(d);
+                        rd.band = _initd.flat_band;
                         
-                        observer.onNext(d);
+                        observer.onNext(rd);
                     }
 
                     observer.onComplete();

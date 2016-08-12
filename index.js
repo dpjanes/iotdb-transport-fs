@@ -22,10 +22,6 @@
 
 "use strict";
 
-var FSTransport = require('./FSTransport');
-
-exports.Transport = FSTransport.FSTransport;
-
 const transporter = require('./transporter');
 exports.make = transporter.make;
 

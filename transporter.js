@@ -80,7 +80,7 @@ const make = (initd, bddd) => {
             unpack: (doc, d) => JSON.parse(doc), 
             pack: d => JSON.stringify(d.value, null, 2),
         },
-        iotdb.keystore().get("/transports/FSTransport/initd"), {
+        iotdb.keystore().get("/transports/iotdb-transport-fs/initd"), {
             prefix: ""
         }
     );

@@ -113,7 +113,7 @@ const make = (initd, bddd) => {
     };
 
     self.rx.put = (observer, d) => {
-        const channel = _initd.channel(_initd, d.id, d.band);
+        const channel = _initd.channel(_initd, d);
 
         _lock.writeLock(release => {
             mkdirp.mkdirp(path.dirname(channel), error => {
@@ -148,7 +148,7 @@ const make = (initd, bddd) => {
     };
     
     self.rx.get = (observer, d) => {
-        const channel = _initd.channel(_initd, d.id, d.band);
+        const channel = _initd.channel(_initd, d);
 
         _lock.readLock(release => {
             fs.readFile(channel, { encoding: 'utf8' }, (error, doc) => {
@@ -172,7 +172,9 @@ const make = (initd, bddd) => {
     };
     
     self.rx.bands = (observer, d) => {
-        const channel = _initd.channel(_initd, d.id);
+        const channel = _initd.channel(_initd, {
+            id: d.id
+        });
 
         const _bands_flat = () => {
             _lock.readLock(release => {

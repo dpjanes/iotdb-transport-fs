@@ -82,6 +82,7 @@ const make = (initd, bddd) => {
         },
         iotdb.keystore().get("/transports/iotdb-transport-fs/initd"), {
             prefix: ""
+            flat_band: null,
         }
     );
 

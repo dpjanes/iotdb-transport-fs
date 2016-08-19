@@ -116,7 +116,7 @@ const make = (initd, bddd) => {
         const channel = _initd.channel(_initd, d);
 
         _lock.writeLock(release => {
-            mkdirp.mkdirp(path.dirname(channel), error => {
+            const _doit = error => {
                 if (error) {
                     return observer.onError(error);
                 }
@@ -132,17 +132,16 @@ const make = (initd, bddd) => {
 
                 if (_.timestamp.check.dictionary(old_value, rd.value) === true) {
                     fs.writeFileSync(channel, _initd.pack(rd));
-                    release();
                     observer.onNext(d);
                     observer.onCompleted();
-                } else if (d.silent_timestamp === false) {
-                    release();
-                    observer.onCompleted();
                 } else {
-                    release();
                     observer.onError(new errors.Timestamp());
                 }
+            };
 
+            mkdirp.mkdirp(path.dirname(channel), error => {
+                _doit(error);
+                release();
             });
         });
     };
@@ -156,7 +155,7 @@ const make = (initd, bddd) => {
 
                 if (error) {
                     if (error.code === 'ENOENT') {
-                        return observer.onCompleted();
+                        return observer.onError(new errors.NotFound());
                     } else {
                         return observer.onError(error);
                     }
@@ -183,13 +182,18 @@ const make = (initd, bddd) => {
                 }, (error, doc) => {
                     release();
 
-                    if (!error) {
-                        const rd = _.d.clone.shallow(d);
-                        rd.band = _initd.flat_band;
-                        
-                        observer.onNext(rd);
+                    if (error) {
+                        if (error.code === 'ENOENT') {
+                            return observer.onError(new errors.NotFound());
+                        } else {
+                            return observer.onError(error);
+                        }
                     }
 
+                    const rd = _.d.clone.shallow(d);
+                    rd.band = _initd.flat_band;
+                    
+                    observer.onNext(rd);
                     observer.onComplete();
                 });
             });
@@ -202,7 +206,7 @@ const make = (initd, bddd) => {
 
                     if (error) {
                         if (error.code === 'ENOENT') {
-                            return observer.onCompleted();
+                            return observer.onError(new errors.NotFound());
                         } else {
                             return observer.onError(error);
                         }

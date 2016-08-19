@@ -35,6 +35,7 @@
         "url": "https://github.com/dpjanes/iotdb-transport-fs"
     }, 
     "scripts": {
+        "cover": "istanbul cover _mocha test", 
         "test": "grunt"
     }, 
     "version": "3.0.0"

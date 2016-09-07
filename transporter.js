@@ -68,7 +68,7 @@ const _filter_folder = path => {
     }
 };
 
-const make = (initd, bddd) => {
+const make = (initd) => {
     const self = iotdb_transport.make();
 
     const _initd = _.d.compose.shallow(

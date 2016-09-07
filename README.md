@@ -1,18 +1,18 @@
 # iotdb-transport-fs
-IOTDB File System Transport.
+[IOTDB](https://github.com/dpjanes/node-iotdb) 
+[Transporter](https://github.com/dpjanes/node-iotdb/blob/master/docs/transporters.md)
+for the File System
 
 <img src="https://raw.githubusercontent.com/dpjanes/iotdb-homestar/master/docs/HomeStar.png" align="right" />
 
 Stores on the Filesystem. Listens for changes to the Filesystem so this is pretty full featured Might need some tweaks for Windows.
 
-This is an **advanced** topic. 
-[Documentation](https://homestar.io/about/transporters).
+# About
 
-# Introduction
-
-Read about Transporters [here](https://github.com/dpjanes/iotdb-transport).
 This Transporter writes files to the file system in JSON, and
 should be able to detect if someone else writes to them.
+
+* [Read more about Transporters](https://github.com/dpjanes/node-iotdb/blob/master/docs/transporters.md)
 
 # Use
 

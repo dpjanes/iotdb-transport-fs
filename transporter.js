@@ -131,7 +131,7 @@ const make = (initd) => {
                 } catch (x) {
                 }
 
-                if (_.timestamp.check.values(old_value, rd.value) === true) {
+                if (_.timestamp.check.dictionary(old_value, rd.value) !== false) {
                     fs.writeFileSync(channel, _initd.pack(rd));
                     observer.onNext(d);
                     observer.onCompleted();

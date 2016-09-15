@@ -214,6 +214,7 @@ const make = (initd) => {
                     }
 
                     names
+                        .filter(name => !name.match(/^[.]/))
                         .sort()
                         .map(name => path.join(channel, name))
                         .filter(path => _filter_file(path))
@@ -242,7 +243,7 @@ const make = (initd) => {
         // this could be Rxed
         const _doit = function (f) {
             const cd = _initd.unchannel(_initd, f);
-            if (!cd) {
+            if (_.is.Empty(cd)) {
                 return;
             }
 
@@ -251,6 +252,10 @@ const make = (initd) => {
             }
 
             if (d.band && (cd.band !== d.band)) {
+                return;
+            }
+            
+            if (d.band && d.band.match(/^[.]/)) {
                 return;
             }
 

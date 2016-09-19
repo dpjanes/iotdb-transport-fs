@@ -70,6 +70,7 @@ const _filter_folder = path => {
 
 const make = (initd) => {
     const self = iotdb_transport.make();
+    self.name = "iotdb-transport-fs";
 
     const _initd = _.d.compose.shallow(
         initd, {

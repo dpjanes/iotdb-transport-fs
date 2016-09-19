@@ -6,7 +6,7 @@
     "dependencies": {
         "iotdb": ">=3.0.0", 
         "iotdb-errors": "~3.0.2", 
-        "iotdb-transport": "~3.0.8", 
+        "iotdb-transport": "~3.0.9", 
         "mkdirp": "~0.5.1", 
         "rwlock": "~5.0.0", 
         "rx": "~4.1.0", 
@@ -38,5 +38,5 @@
         "cover": "istanbul cover _mocha test", 
         "test": "grunt"
     }, 
-    "version": "3.0.4"
+    "version": "3.0.5"
 }

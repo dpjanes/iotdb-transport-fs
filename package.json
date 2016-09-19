@@ -6,7 +6,7 @@
     "dependencies": {
         "iotdb": ">=3.0.0", 
         "iotdb-errors": "~3.0.2", 
-        "iotdb-transport": "~3.0.6", 
+        "iotdb-transport": "~3.0.8", 
         "mkdirp": "~0.5.1", 
         "rwlock": "~5.0.0", 
         "rx": "~4.1.0", 
@@ -22,7 +22,7 @@
         "grunt-jsbeautifier": "~0.2.13", 
         "jshint-stylish": "~2.2.1", 
         "load-grunt-tasks": "~3.5.2", 
-        "request": "~2.74.0"
+        "request": "~2.75.0"
     }, 
     "homepage": "https://homestar.io", 
     "homestar": {}, 
@@ -38,5 +38,5 @@
         "cover": "istanbul cover _mocha test", 
         "test": "grunt"
     }, 
-    "version": "3.0.3"
+    "version": "3.0.4"
 }

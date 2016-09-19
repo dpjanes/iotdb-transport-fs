@@ -255,7 +255,7 @@ const make = (initd) => {
                 return;
             }
             
-            if (d.band && d.band.match(/^[.]/)) {
+            if (cd.band && cd.band.match(/^[.]/)) {
                 return;
             }
 

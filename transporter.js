@@ -241,9 +241,9 @@ const make = (initd) => {
         let last_time = 0;
 
         // this could be Rxed
-        const _doit = function (f) {
+        const _on_fs_update = function (f) {
             const cd = _initd.unchannel(_initd, f);
-            if (_.is.Empty(cd)) {
+            if (_.is.Empty(cd) || _.is.Empty(cd.id) || _.is.Empty(cd.band)) {
                 return;
             }
 
@@ -273,32 +273,20 @@ const make = (initd) => {
             observer.onNext(rd);
         };
 
-        // _lock.writeLock(function (release) {
-            watch.createMonitor(_initd.prefix, function (monitor) {
-                monitor.on("created", function (f, stat) {
-                    _doit(f);
-                });
-                monitor.on("changed", function (f, curr, prev) {
-                    _doit(f);
-                });
-                monitor.on("removed", function (f, stat) {
-                    _doit(f);
-                });
-
-                setTimeout(function() {
-                    // release();
-                }, 1000);
+        watch.createMonitor(_initd.prefix, function (monitor) {
+            monitor.on("created", function (f, stat) {
+                _on_fs_update(f);
             });
-        // });
+            monitor.on("changed", function (f, curr, prev) {
+                _on_fs_update(f);
+            });
+            monitor.on("removed", function (f, stat) {
+                _on_fs_update(f);
+            });
+        });
     };
 
-
-    // ignore errors - they will hppen again later
-    _lock.writeLock(release => {
-        mkdirp.mkdirp(_initd.prefix, error => {
-            release();
-        });
-    });
+    mkdirp.sync(_initd.prefix);
 
     return self;
 };

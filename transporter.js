@@ -287,6 +287,53 @@ const make = (initd) => {
         });
     };
 
+    self.rx.remove = (observer, d) => {
+        const channel = _initd.channel(_initd, {
+            id: d.id
+        });
+
+        const _bands = () => {
+            _lock.readLock(release => {
+                fs.readdir(channel, function (error, names) {
+                    release();
+
+                    if (error) {
+                        if (error.code === 'ENOENT') {
+                            return observer.onError(new errors.NotFound());
+                        } else {
+                            return observer.onError(error);
+                        }
+                    }
+
+                    names
+                        .map(name => path.join(channel, name))
+                        .filter(path => _filter_file(path))
+                        .forEach(path => {
+                            fs.unlinkSync(path);
+
+                            logger.warn({
+                                path: path,
+                            }, "removed file");
+                        });
+
+                    fs.rmdirSync(channel);
+                    logger.warn({
+                        path: channel,
+                    }, "removed folder (and hence, the thing)");
+
+                    observer.onCompleted();
+                });
+            });
+        };
+
+        if (_initd.flat_band) {
+            _bands_flat()
+        } else {
+            _bands();
+        }
+    };
+
+
     mkdirp.sync(_initd.prefix);
 
     return self;

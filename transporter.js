@@ -87,6 +87,8 @@ const make = (initd) => {
         }
     );
 
+    assert.ok(!_.is.Empty(_initd.prefix), "initd.prefix is required");
+
     self.rx.list = (observer, d) => {
         _lock.readLock(release => {
             fs.readdir(_initd.prefix, function (error, names) {

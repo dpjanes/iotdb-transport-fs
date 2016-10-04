@@ -29,6 +29,7 @@ const errors = require('iotdb-errors');
 
 const Rx = require('rx');
 const events = require('events');
+const assert = require('assert');
 
 const fs = require('fs');
 const path = require('path');

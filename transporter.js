@@ -290,6 +290,10 @@ const make = (initd) => {
         });
     };
 
+    // not qute sure what to do here yet
+    self.rx.added = (observer, d) => {
+    };
+
     self.rx.remove = (observer, d) => {
         const channel = _initd.channel(_initd, {
             id: d.id
